@@ -19,7 +19,7 @@ const Navbar = () => {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <button onClick={() => navigate(dashboardPath)} className="flex items-center gap-2 font-bold text-lg text-primary">
           <Building2 className="h-6 w-6" />
-          <span>ResidentHub</span>
+          <span>Sentrigate</span>
         </button>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground hidden sm:inline">
@@ -30,8 +30,8 @@ const Navbar = () => {
           </Button>
         </div>
       </div>
-    </nav>
-  );
+    </nav>);
+
 };
 
 export default Navbar;
