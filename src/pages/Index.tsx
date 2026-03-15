@@ -18,7 +18,7 @@ const Index = () => {
     e.preventDefault();
     if (!username || !password || !role) return;
     setRole(role);
-    navigate(role === "Security" ? "/security" : "/resident");
+    navigate(role === "Security" ? "/security" : role === "Service Provider" ? "/provider" : "/resident");
   };
 
   return (
@@ -58,6 +58,7 @@ const Index = () => {
               <SelectContent>
                 <SelectItem value="Security">Security</SelectItem>
                 <SelectItem value="Resident">Resident</SelectItem>
+                <SelectItem value="Service Provider">Service Provider</SelectItem>
               </SelectContent>
             </Select>
           </div>
