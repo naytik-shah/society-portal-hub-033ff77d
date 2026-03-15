@@ -1,6 +1,7 @@
 import { useApp } from "@/context/AppContext";
 import { useNavigate } from "react-router-dom";
-import { Building2, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
