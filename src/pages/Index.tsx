@@ -28,7 +28,7 @@ const Index = () => {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Building2 className="h-8 w-8" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">ResidentHub</h1>
+          <h1 className="text-2xl font-bold text-foreground">Sentrigate</h1>
           <p className="mt-1 text-muted-foreground">Society Management System</p>
         </div>
 
