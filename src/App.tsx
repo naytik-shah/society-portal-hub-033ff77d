@@ -13,6 +13,10 @@ import MyVisitors from "./pages/MyVisitors";
 import HomeServices from "./pages/HomeServices";
 import SocietyEvents from "./pages/SocietyEvents";
 import ManageServiceProviders from "./pages/ManageServiceProviders";
+import ServiceProviderDashboard from "./pages/ServiceProviderDashboard";
+import ProviderProfile from "./pages/ProviderProfile";
+import ServiceRequests from "./pages/ServiceRequests";
+import ProviderSchedule from "./pages/ProviderSchedule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
