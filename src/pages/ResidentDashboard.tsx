@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import DashboardCard from "@/components/DashboardCard";
-import { Users, Wrench, CalendarDays, Home } from "lucide-react";
+import { Users, Wrench, CalendarDays, Home, Settings } from "lucide-react";
 
 const ResidentDashboard = () => (
   <div className="min-h-screen bg-background">
