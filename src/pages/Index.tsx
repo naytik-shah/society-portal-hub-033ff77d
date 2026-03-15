@@ -58,6 +58,7 @@ const Index = () => {
               <SelectContent>
                 <SelectItem value="Security">Security</SelectItem>
                 <SelectItem value="Resident">Resident</SelectItem>
+                <SelectItem value="Service Provider">Service Provider</SelectItem>
               </SelectContent>
             </Select>
           </div>
