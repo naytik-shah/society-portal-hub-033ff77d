@@ -12,6 +12,7 @@ import ResidentDashboard from "./pages/ResidentDashboard";
 import MyVisitors from "./pages/MyVisitors";
 import HomeServices from "./pages/HomeServices";
 import SocietyEvents from "./pages/SocietyEvents";
+import ManageServiceProviders from "./pages/ManageServiceProviders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
