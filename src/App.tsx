@@ -12,6 +12,7 @@ import ResidentDashboard from "./pages/ResidentDashboard";
 import MyVisitors from "./pages/MyVisitors";
 import HomeServices from "./pages/HomeServices";
 import SocietyEvents from "./pages/SocietyEvents";
+import ManageServiceProviders from "./pages/ManageServiceProviders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/resident/my-visitors" element={<MyVisitors />} />
             <Route path="/resident/services" element={<HomeServices />} />
             <Route path="/resident/events" element={<SocietyEvents />} />
+            <Route path="/resident/manage-providers" element={<ManageServiceProviders />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
