@@ -33,7 +33,7 @@ const ProviderProfile = () => {
               </div>
               <div>
                 <h2 className="text-xl font-semibold">{providerData.name}</h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
                   <BadgeCheck className="h-3 w-3" /> {providerData.status}
                 </span>
               </div>
