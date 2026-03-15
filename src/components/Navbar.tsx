@@ -19,7 +19,7 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <button onClick={() => navigate(dashboardPath)} className="flex items-center gap-2 font-bold text-lg text-primary">
-          <Building2 className="h-6 w-6" />
+          <img src={logo} alt="Sentrigate Logo" className="h-8 w-8 rounded-full object-contain" />
           <span>Sentrigate</span>
         </button>
         <div className="flex items-center gap-3">

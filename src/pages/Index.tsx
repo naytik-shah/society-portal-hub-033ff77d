@@ -26,9 +26,7 @@ const Index = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Building2 className="h-8 w-8" />
-          </div>
+          <img src={logo} alt="Sentrigate Logo" className="mx-auto mb-2 h-20 w-20 rounded-full object-contain" />
           <h1 className="text-2xl font-bold text-foreground">Sentrigate</h1>
           <p className="mt-1 text-muted-foreground">Society Management System</p>
         </div>
