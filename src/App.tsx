@@ -38,6 +38,10 @@ const App = () => (
             <Route path="/resident/services" element={<HomeServices />} />
             <Route path="/resident/events" element={<SocietyEvents />} />
             <Route path="/resident/manage-providers" element={<ManageServiceProviders />} />
+            <Route path="/provider" element={<ServiceProviderDashboard />} />
+            <Route path="/provider/profile" element={<ProviderProfile />} />
+            <Route path="/provider/requests" element={<ServiceRequests />} />
+            <Route path="/provider/schedule" element={<ProviderSchedule />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

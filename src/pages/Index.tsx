@@ -18,7 +18,7 @@ const Index = () => {
     e.preventDefault();
     if (!username || !password || !role) return;
     setRole(role);
-    navigate(role === "Security" ? "/security" : "/resident");
+    navigate(role === "Security" ? "/security" : role === "Service Provider" ? "/provider" : "/resident");
   };
 
   return (
