@@ -1,23 +1,65 @@
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { ArrowLeft, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { useApp } from "@/context/AppContext";
+import * as apiService from "@/services/api";
 
-const requests = [
-  { resident: "Anita Desai", flat: "A-101", service: "Wiring Repair", date: "2026-03-15", status: "Pending" },
-  { resident: "Mohan Gupta", flat: "B-203", service: "Fan Installation", date: "2026-03-14", status: "Accepted" },
-  { resident: "Priya Mehta", flat: "C-302", service: "Socket Replacement", date: "2026-03-13", status: "Completed" },
-  { resident: "Vikram Singh", flat: "D-102", service: "Light Fitting", date: "2026-03-12", status: "Pending" },
-  { resident: "Sunita Rao", flat: "A-405", service: "MCB Repair", date: "2026-03-11", status: "Completed" },
-];
+interface ServiceRequest {
+  id: number;
+  provider_id: number;
+  resident_id: number;
+  description: string;
+  status: string;
+  created_at: string;
+}
 
 const statusColor = (s: string) =>
-  s === "Pending" ? "destructive" : s === "Accepted" ? "default" : "secondary";
+  s === "pending" ? "destructive" : s === "accepted" ? "default" : "secondary";
 
 const ServiceRequests = () => {
   const navigate = useNavigate();
+  const { user } = useApp();
+  const { toast } = useToast();
+  const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        setIsLoading(true);
+        if (user?.id) {
+          const response = await apiService.getServiceRequests(user.id);
+          if (response.success) {
+            setRequests(response.requests || []);
+          }
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load service requests",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, [user, toast]);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    try {
+      return new Date(dateString).toLocaleDateString("en-IN");
+    } catch {
+      return dateString;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,32 +74,38 @@ const ServiceRequests = () => {
           <h1 className="text-2xl font-bold">Service Requests</h1>
         </div>
 
-        <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Resident Name</TableHead>
-                <TableHead>Flat Number</TableHead>
-                <TableHead>Service Requested</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {requests.map((r, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium">{r.resident}</TableCell>
-                  <TableCell>{r.flat}</TableCell>
-                  <TableCell>{r.service}</TableCell>
-                  <TableCell>{r.date}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusColor(r.status)}>{r.status}</Badge>
-                  </TableCell>
+        {isLoading ? (
+          <div className="text-center py-12 text-muted-foreground">Loading service requests...</div>
+        ) : requests.length > 0 ? (
+          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Request ID</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {requests.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">#{r.id}</TableCell>
+                    <TableCell>{r.description}</TableCell>
+                    <TableCell>{formatDate(r.created_at)}</TableCell>
+                    <TableCell>
+                      <Badge variant={statusColor(r.status)}>
+                        {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">No service requests found</div>
+        )}
       </main>
     </div>
   );

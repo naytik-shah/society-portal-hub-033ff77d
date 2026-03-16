@@ -1,42 +1,109 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import * as apiService from "@/services/api";
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  name: string;
+}
 
 export interface Visitor {
+  id?: number;
   name: string;
   phone: string;
   purpose: string;
-  flat: string;
-  dateTime: string;
+  flat_number: string;
+  check_in_time?: string;
+  check_out_time?: string | null;
+  created_at?: string;
 }
 
 interface AppContextType {
+  // Auth
+  user: User | null;
+  setUser: (user: User | null) => void;
   role: string | null;
   setRole: (role: string | null) => void;
-  visitors: Visitor[];
-  addVisitor: (v: Omit<Visitor, "dateTime">) => void;
-}
+  isLoggedIn: boolean;
+  logout: () => void;
 
-const dummyVisitors: Visitor[] = [
-  { name: "Rahul Sharma", phone: "9876543210", purpose: "Delivery", flat: "A-101", dateTime: "2026-02-15 10:30 AM" },
-  { name: "Priya Mehta", phone: "9123456789", purpose: "Guest Visit", flat: "B-204", dateTime: "2026-02-15 11:45 AM" },
-  { name: "Amit Verma", phone: "9988776655", purpose: "Maintenance", flat: "C-302", dateTime: "2026-02-14 03:15 PM" },
-  { name: "Sunita Rao", phone: "9001122334", purpose: "Courier", flat: "A-405", dateTime: "2026-02-14 09:00 AM" },
-  { name: "Vikram Singh", phone: "9112233445", purpose: "Guest Visit", flat: "D-102", dateTime: "2026-02-13 06:30 PM" },
-];
+  // Visitors
+  visitors: Visitor[];
+  setVisitors: (visitors: Visitor[]) => void;
+  addVisitor: (v: Omit<Visitor, "id" | "check_in_time">) => Promise<void>;
+  loadVisitors: () => Promise<void>;
+}
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
-  const [visitors, setVisitors] = useState<Visitor[]>(dummyVisitors);
+  const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const isLoggedIn = !!user;
 
-  const addVisitor = (v: Omit<Visitor, "dateTime">) => {
-    const now = new Date();
-    const dateTime = now.toLocaleString("en-IN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true });
-    setVisitors((prev) => [{ ...v, dateTime }, ...prev]);
+  // Load visitors from backend
+  const loadVisitors = async () => {
+    try {
+      const response = await apiService.getAllVisitors();
+      if (response.success) {
+        setVisitors(response.visitors || []);
+      }
+    } catch (error) {
+      console.error("Error loading visitors:", error);
+    }
   };
 
+  // Add visitor to backend
+  const addVisitor = async (v: Omit<Visitor, "id" | "check_in_time">) => {
+    try {
+      const response = await apiService.addVisitor({
+        name: v.name,
+        phone: v.phone,
+        purpose: v.purpose,
+        flat_number: v.flat_number,
+      });
+
+      if (response.success) {
+        // Reload visitors to get updated list
+        await loadVisitors();
+      } else {
+        throw new Error(response.message || "Failed to add visitor");
+      }
+    } catch (error) {
+      console.error("Error adding visitor:", error);
+      throw error;
+    }
+  };
+
+  // Logout function
+  const logout = () => {
+    setUser(null);
+    setRole(null);
+  };
+
+  // Load visitors on mount
+  useEffect(() => {
+    loadVisitors();
+  }, []);
+
   return (
-    <AppContext.Provider value={{ role, setRole, visitors, addVisitor }}>
+    <AppContext.Provider
+      value={{
+        user,
+        setUser,
+        role,
+        setRole,
+        isLoggedIn,
+        logout,
+        visitors,
+        setVisitors,
+        addVisitor,
+        loadVisitors,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
