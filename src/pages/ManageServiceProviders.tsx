@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Wrench, Phone, Eye, Zap, Droplets, UserCheck, Car, Bug, CookingPot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getAllProviders, addProvider } from "@/services/api";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,12 +25,12 @@ const serviceIcons: Record<string, React.ElementType> = {
 interface Provider {
   name: string;
   phone: string;
-  service: string;
-  status: "Available" | "Busy";
+  service_type: string;
+  status?: "Available" | "Busy";
 }
 
 const dummyProviders: Provider[] = [
-  { name: "Rajesh Sharma", phone: "9876543210", service: "Electrician", status: "Available" },
+  { name: "Rajesh Sharma", phone: "9876543210", service_type: "Electrician", status: "Available" },
   { name: "Suresh Patil", phone: "9123456780", service: "Plumber", status: "Busy" },
   { name: "Meena Joshi", phone: "9988776655", service: "Maid", status: "Available" },
   { name: "Arun Singh", phone: "9765432109", service: "Driver", status: "Available" },
@@ -40,19 +41,55 @@ const dummyProviders: Provider[] = [
 const ManageServiceProviders = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [providers, setProviders] = useState<Provider[]>(dummyProviders);
+  const [providers, setProviders] = useState<Provider[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [service, setService] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const data = await getAllProviders();
+        const providerList = (data as any).providers || (data as any) || [];
+        setProviders(providerList);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Could not load providers.",
+          variant: "destructive",
+        });
+        setProviders(dummyProviders);
+      }
+    };
+
+    loadProviders();
+  }, [toast]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone || !service) return;
-    setProviders((prev) => [{ name, phone, service, status: "Available" }, ...prev]);
-    setName("");
-    setPhone("");
-    setService("");
-    toast({ title: "Provider Added", description: `${name} has been added as ${service}.` });
+
+    try {
+      await addProvider({
+        name,
+        service_type: service,
+        phone,
+        email: "",
+        description: "",
+        rating: 0,
+      });
+
+      const providerObj: Provider = { name, phone, service_type: service, status: "Available" };
+      setProviders((prev) => [providerObj, ...prev]);
+
+      setName("");
+      setPhone("");
+      setService("");
+
+      toast({ title: "Provider Added", description: `${name} has been added as ${service}.` });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to add provider", variant: "destructive" });
+    }
   };
 
   return (
@@ -121,12 +158,12 @@ const ManageServiceProviders = () => {
                       <TableCell>
                         <span className="flex items-center gap-2">
                           <Icon className="h-4 w-4 text-primary" />
-                          {p.service}
+                          {p.service_type}
                         </span>
                       </TableCell>
                       <TableCell>
                         <Badge variant={p.status === "Available" ? "default" : "secondary"}>
-                          {p.status}
+                          {p.status ?? "Available"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">

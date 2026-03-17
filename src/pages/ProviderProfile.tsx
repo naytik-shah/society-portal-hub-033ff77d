@@ -26,48 +26,38 @@ const ProviderProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProvider = async () => {
-      try {
-        setIsLoading(true);
-        if (user?.id) {
-          const response = await apiService.getProviderById(user.id);
-          if (response.success) {
-            setProvider(response.provider);
-          } else {
-            // If not found as provider, use user data
-            setProvider({
-              name: user.name,
-              phone: "",
-              email: user.email,
-              service_type: "Service Provider",
-              description: "Professional service provider",
-              rating: 4.5,
-            });
-          }
-        }
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load profile",
-          variant: "destructive",
-        });
-        // Fallback to user data
-        if (user) {
-          setProvider({
-            name: user.name,
-            phone: "",
-            email: user.email,
-            service_type: "Service Provider",
-            description: "Professional service provider",
-            rating: 4.5,
-          });
-        }
-      } finally {
+    const loadProfile = () => {
+      if (!user) {
+        setProvider(null);
         setIsLoading(false);
+        return;
       }
+
+      const profileFromUser: ProviderData = {
+        name: user.name || user.username,
+        phone: "",
+        email: user.email,
+        service_type: user.role === "Service Provider" ? "Service Provider" : "Resident",
+        description: "Profile from authenticated user",
+        rating: 4.5,
+      };
+
+      setProvider(profileFromUser);
+      setIsLoading(false);
     };
 
-    fetchProvider();
+    setIsLoading(true);
+    try {
+      loadProfile();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load profile",
+        variant: "destructive",
+      });
+      setProvider(null);
+      setIsLoading(false);
+    }
   }, [user, toast]);
 
   if (isLoading) {

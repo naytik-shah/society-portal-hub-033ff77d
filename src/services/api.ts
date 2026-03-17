@@ -1,11 +1,11 @@
 /**
  * API Service - Centralized backend API calls
- * All endpoints connect to Flask backend running on localhost:5000
+ * Connects to backend running on localhost:5000
  */
 
 const API_BASE_URL = "http://localhost:5000";
 
-// Helper function for API calls
+// Generic API helper
 async function apiCall<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -15,35 +15,40 @@ async function apiCall<T>(
     ...options.headers,
   };
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-      credentials: "include",
-      mode: "cors",
-    });
+  const tryUrls = [`${API_BASE_URL}${endpoint}`, `${API_BASE_URL}/api${endpoint}`];
+  let lastError: unknown = null;
 
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorMessage;
-      } catch (e) {
-        // Response wasn't JSON, use status text
+  for (const url of tryUrls) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: "include",
+        mode: "cors",
+      });
+
+      if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+          const data = await response.json();
+          message = (data as any).message || message;
+        } catch {}
+        throw new Error(message);
       }
-      throw new Error(errorMessage);
-    }
 
-    return response.json() as Promise<T>;
-  } catch (error) {
-    if (error instanceof TypeError && error.message.includes('CORS')) {
-      throw new Error(`CORS Error: Make sure backend is running on ${API_BASE_URL}`);
+      return response.json();
+    } catch (err) {
+      lastError = err;
     }
-    throw error;
   }
+
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+  throw new Error("Unknown API error");
 }
 
-// ============ AUTH ENDPOINTS ============
+// ================= AUTH =================
 
 export interface LoginResponse {
   success: boolean;
@@ -68,15 +73,15 @@ export async function login(
   });
 }
 
-export async function getUsers(): Promise<any> {
+export async function getUsers() {
   return apiCall("/users");
 }
 
-export async function getUsersByRole(role: string): Promise<any> {
+export async function getUsersByRole(role: string) {
   return apiCall(`/users/role/${role}`);
 }
 
-// ============ VISITOR ENDPOINTS ============
+// ================= VISITORS =================
 
 export interface Visitor {
   id?: number;
@@ -89,41 +94,48 @@ export interface Visitor {
   created_at?: string;
 }
 
-export async function addVisitor(visitor: Omit<Visitor, "id">): Promise<any> {
-  return apiCall("/visitors/add", {
-    method: "POST",
-    body: JSON.stringify({
-      name: visitor.name,
-      phone: visitor.phone,
-      purpose: visitor.purpose,
-      flat_number: visitor.flat_number,
-    }),
-  });
+export async function addVisitor(visitor: Omit<Visitor, "id">) {
+  // Flask API endpoint uses /visitors/add (POST), Express API may use /visitors
+  try {
+    return await apiCall("/visitors/add", {
+      method: "POST",
+      body: JSON.stringify(visitor),
+    });
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : "";
+    if (errMsg.includes("404") || errMsg.includes("405")) {
+      return apiCall("/visitors", {
+        method: "POST",
+        body: JSON.stringify(visitor),
+      });
+    }
+    throw error;
+  }
 }
 
-export async function getAllVisitors(): Promise<any> {
+export async function getAllVisitors() {
   return apiCall("/visitors");
 }
 
-export async function getVisitorById(id: number): Promise<any> {
+export async function getVisitorById(id: number) {
   return apiCall(`/visitors/${id}`);
 }
 
-export async function getVisitorsByFlat(flatNumber: string): Promise<any> {
+export async function getVisitorsByFlat(flatNumber: string) {
   return apiCall(`/visitors/flat/${flatNumber}`);
 }
 
-export async function checkoutVisitor(id: number): Promise<any> {
+export async function checkoutVisitor(id: number) {
   return apiCall(`/visitors/${id}/checkout`, {
     method: "PUT",
   });
 }
 
-export async function getActiveVisitors(): Promise<any> {
+export async function getActiveVisitors() {
   return apiCall("/visitors/active");
 }
 
-// ============ SERVICE PROVIDER ENDPOINTS ============
+// ================= SERVICE PROVIDERS =================
 
 export interface ServiceProvider {
   id?: number;
@@ -136,26 +148,50 @@ export interface ServiceProvider {
   created_at?: string;
 }
 
-export async function getAllProviders(): Promise<any> {
-  return apiCall("/providers");
-}
-
-export async function getProviderById(id: number): Promise<any> {
+export async function getProviderById(id: number) {
   return apiCall(`/providers/${id}`);
 }
 
-export async function getProvidersByService(serviceType: string): Promise<any> {
+export async function getProvidersByService(serviceType: string) {
   return apiCall(`/providers/type/${serviceType}`);
 }
 
-export async function addProvider(provider: Omit<ServiceProvider, "id">): Promise<any> {
-  return apiCall("/providers/add", {
-    method: "POST",
-    body: JSON.stringify(provider),
-  });
+export async function addProvider(provider: Omit<ServiceProvider, "id">) {
+  // Flask path is POST /providers/add, Express path is likely POST /api/service-providers
+  const endpoints = ["/providers/add", "/providers", "/service-providers"];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await apiCall(endpoint, {
+        method: "POST",
+        body: JSON.stringify(provider),
+      });
+      return res;
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : "";
+      if (!errMsg.includes("404") && !errMsg.includes("405")) {
+        throw error;
+      }
+      // try next endpoint
+    }
+  }
+
+  throw new Error("Failed to add provider: no supported endpoint available");
 }
 
-// ============ SERVICE REQUEST ENDPOINTS ============
+export async function getAllProviders() {
+  try {
+    return await apiCall("/providers");
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : "";
+    if (errMsg.includes("404") || errMsg.includes("405")) {
+      return apiCall("/service-providers");
+    }
+    throw error;
+  }
+}
+
+// ================= SERVICE REQUESTS =================
 
 export interface ServiceRequest {
   id?: number;
@@ -166,7 +202,9 @@ export interface ServiceRequest {
   created_at?: string;
 }
 
-export async function createServiceRequest(request: Omit<ServiceRequest, "id">): Promise<any> {
+export async function createServiceRequest(
+  request: Omit<ServiceRequest, "id">
+) {
   return apiCall("/service/request", {
     method: "POST",
     body: JSON.stringify(request),
@@ -176,7 +214,7 @@ export async function createServiceRequest(request: Omit<ServiceRequest, "id">):
 export async function getServiceRequests(
   providerId?: number,
   residentId?: number
-): Promise<any> {
+) {
   let url = "/service/requests";
   const params = new URLSearchParams();
 
@@ -190,7 +228,7 @@ export async function getServiceRequests(
   return apiCall(url);
 }
 
-// ============ SCHEDULE ENDPOINTS ============
+// ================= SCHEDULE =================
 
 export interface Schedule {
   id?: number;
@@ -201,12 +239,12 @@ export interface Schedule {
   created_at?: string;
 }
 
-export async function getProviderSchedule(providerId: number): Promise<any> {
+export async function getProviderSchedule(providerId: number) {
   return apiCall(`/provider/schedule/${providerId}`);
 }
 
-export async function addProviderSchedule(schedule: Omit<Schedule, "id">): Promise<any> {
-  return apiCall("/provider/schedule/add", {
+export async function addProviderSchedule(schedule: Omit<Schedule, "id">) {
+  return apiCall("/provider/schedule", {
     method: "POST",
     body: JSON.stringify(schedule),
   });

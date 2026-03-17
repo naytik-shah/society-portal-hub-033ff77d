@@ -15,7 +15,7 @@ const Index = () => {
   const [password, setPassword] = useState("");
   const [role, setRoleLocal] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { setUser, setRole } = useApp();
+  const { setUser, setRole, loadVisitors } = useApp();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,7 +37,7 @@ const Index = () => {
       if (response.success) {
         // Store user data in context
         setUser(response.user);
-        setRole(role);
+        setRole(response.user.role || role);
 
         toast({
           title: "Success",
@@ -45,6 +45,7 @@ const Index = () => {
         });
 
         // Navigate based on role
+        await loadVisitors();
         if (role === "Security") {
           navigate("/security");
         } else if (role === "Service Provider") {

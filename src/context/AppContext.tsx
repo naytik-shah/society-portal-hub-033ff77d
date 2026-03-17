@@ -44,15 +44,60 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const isLoggedIn = !!user;
 
+  // Persist auth state to localStorage
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem("appUser");
+      const storedRole = localStorage.getItem("appRole");
+
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+      if (storedRole) {
+        setRole(storedRole);
+      }
+    } catch (err) {
+      console.error("Failed to load auth state from localStorage", err);
+    }
+  }, []);
+
+  const setUserAndStore = (newUser: User | null) => {
+    setUser(newUser);
+    if (newUser) {
+      localStorage.setItem("appUser", JSON.stringify(newUser));
+    } else {
+      localStorage.removeItem("appUser");
+    }
+  };
+
+  const setRoleAndStore = (newRole: string | null) => {
+    setRole(newRole);
+    if (newRole) {
+      localStorage.setItem("appRole", newRole);
+    } else {
+      localStorage.removeItem("appRole");
+    }
+  };
+
   // Load visitors from backend
   const loadVisitors = async () => {
     try {
       const response = await apiService.getAllVisitors();
-      if (response.success) {
-        setVisitors(response.visitors || []);
+
+      let visitorsPayload = [] as Visitor[];
+      if (Array.isArray(response)) {
+        visitorsPayload = response;
+      } else if (response && (response as any).visitors) {
+        visitorsPayload = (response as any).visitors;
+      } else if (response && (response as any).data) {
+        visitorsPayload = (response as any).data;
       }
+
+      setVisitors(visitorsPayload || []);
     } catch (error) {
       console.error("Error loading visitors:", error);
+      setVisitors([]);
+      throw error;
     }
   };
 
@@ -66,11 +111,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         flat_number: v.flat_number,
       });
 
-      if (response.success) {
+      const success = response && (response as any).success !== false;
+
+      if (success) {
         // Reload visitors to get updated list
         await loadVisitors();
       } else {
-        throw new Error(response.message || "Failed to add visitor");
+        throw new Error((response as any).message || "Failed to add visitor");
       }
     } catch (error) {
       console.error("Error adding visitor:", error);
@@ -80,8 +127,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Logout function
   const logout = () => {
-    setUser(null);
-    setRole(null);
+    setUserAndStore(null);
+    setRoleAndStore(null);
   };
 
   // Load visitors on mount
@@ -93,9 +140,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     <AppContext.Provider
       value={{
         user,
-        setUser,
+        setUser: setUserAndStore,
         role,
-        setRole,
+        setRole: setRoleAndStore,
         isLoggedIn,
         logout,
         visitors,

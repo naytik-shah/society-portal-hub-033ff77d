@@ -9,13 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 const VisitorLog = () => {
   const { visitors, loadVisitors } = useApp();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchVisitors = async () => {
       try {
-        setIsLoading(true);
         await loadVisitors();
       } catch (error) {
         toast({
@@ -23,8 +22,6 @@ const VisitorLog = () => {
           description: "Failed to load visitors",
           variant: "destructive",
         });
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -60,9 +57,7 @@ const VisitorLog = () => {
         </button>
         <h1 className="mb-6 text-2xl font-bold">Visitor Log</h1>
 
-        {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading visitors...</div>
-        ) : visitors && visitors.length > 0 ? (
+        {visitors && visitors.length > 0 ? (
           <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
             <Table>
               <TableHeader>

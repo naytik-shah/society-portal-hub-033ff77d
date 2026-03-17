@@ -1,16 +1,13 @@
 import Navbar from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const myVisitors = [
-  { name: "Rahul Sharma", phone: "9876543210", purpose: "Delivery", dateTime: "2026-02-15 10:30 AM" },
-  { name: "Priya Mehta", phone: "9123456789", purpose: "Guest Visit", dateTime: "2026-02-14 11:45 AM" },
-  { name: "Courier Boy", phone: "9988776655", purpose: "Courier", dateTime: "2026-02-13 03:15 PM" },
-];
-
 const MyVisitors = () => {
+  const { visitors } = useApp();
   const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -30,14 +27,22 @@ const MyVisitors = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {myVisitors.map((v, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium">{v.name}</TableCell>
-                  <TableCell>{v.phone}</TableCell>
-                  <TableCell>{v.purpose}</TableCell>
-                  <TableCell className="text-muted-foreground">{v.dateTime}</TableCell>
+              {visitors.length > 0 ? (
+                visitors.map((v, i) => (
+                  <TableRow key={v.id ?? i}>
+                    <TableCell className="font-medium">{v.name}</TableCell>
+                    <TableCell>{v.phone}</TableCell>
+                    <TableCell>{v.purpose}</TableCell>
+                    <TableCell className="text-muted-foreground">{v.check_in_time || "N/A"}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                    No visitors found
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>

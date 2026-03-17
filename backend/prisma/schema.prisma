@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Visitor {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  purpose   String
+  flat      String
+  dateTime  String
+  createdAt DateTime @default(now())
+}
+
+model MyVisitor {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  purpose   String
+  dateTime  String
+  createdAt DateTime @default(now())
+}
+
+model ServiceProvider {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  service   String
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model ServiceRequest {
+  id        Int      @id @default(autoincrement())
+  resident  String
+  flat      String
+  service   String
+  date      String
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model Schedule {
+  id        Int      @id @default(autoincrement())
+  flat      String
+  service   String
+  time      String
+  date      String
+  createdAt DateTime @default(now())
+}
+
+model SocietyEvent {
+  id        Int      @id @default(autoincrement())
+  title     String
+  date      String
+  time      String
+  location  String
+  createdAt DateTime @default(now())
+}
