@@ -32,11 +32,21 @@ const ServiceRequests = () => {
     const fetchRequests = async () => {
       try {
         setIsLoading(true);
-        if (user?.id) {
-          const response = await apiService.getServiceRequests(user.id);
-          if (response.success) {
-            setRequests(response.requests || []);
-          }
+        if (!user?.id || !user.role) {
+          setRequests([]);
+          return;
+        }
+
+        let response: any = null;
+
+        if (user.role === "Service Provider") {
+          response = await apiService.getServiceRequests(user.id, undefined);
+        } else if (user.role === "Resident") {
+          response = await apiService.getServiceRequests(undefined, user.id);
+        }
+
+        if (response?.success) {
+          setRequests(response.requests || []);
         }
       } catch (error) {
         toast({
@@ -61,11 +71,13 @@ const ServiceRequests = () => {
     }
   };
 
+const backPath = user?.role === "Service Provider" ? "/provider" : "/resident";
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="mx-auto max-w-4xl px-4 py-12">
-        <Button variant="ghost" className="mb-6" onClick={() => navigate("/provider")}>
+        <Button variant="ghost" className="mb-6" onClick={() => navigate(backPath)}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
         </Button>
 

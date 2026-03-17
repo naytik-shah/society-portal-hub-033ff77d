@@ -16,6 +16,7 @@ import ManageServiceProviders from "./pages/ManageServiceProviders";
 import ServiceProviderDashboard from "./pages/ServiceProviderDashboard";
 import ProviderProfile from "./pages/ProviderProfile";
 import ServiceRequests from "./pages/ServiceRequests";
+import ResidentServiceRequest from "./pages/ResidentServiceRequest";
 import ProviderSchedule from "./pages/ProviderSchedule";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +42,8 @@ const App = () => (
             <Route path="/provider" element={<ServiceProviderDashboard />} />
             <Route path="/provider/profile" element={<ProviderProfile />} />
             <Route path="/provider/requests" element={<ServiceRequests />} />
+            <Route path="/resident/requests" element={<ServiceRequests />} />
+            <Route path="/resident/request-service" element={<ResidentServiceRequest />} />
             <Route path="/provider/schedule" element={<ProviderSchedule />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

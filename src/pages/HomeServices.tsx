@@ -3,6 +3,8 @@ import Navbar from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Zap, Droplets, UserCheck, Car, Bug, ChefHat } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useApp } from "@/context/AppContext";
+import { Button } from "@/components/ui/button";
 import * as apiService from "@/services/api";
 
 interface ServiceProvider {
@@ -26,6 +28,7 @@ const serviceIcons: Record<string, any> = {
 
 const HomeServices = () => {
   const navigate = useNavigate();
+  const { user } = useApp();
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -96,6 +99,16 @@ const HomeServices = () => {
                           <span className="text-xs text-muted-foreground">{provider.phone}</span>
                         </div>
                         <span className="text-sm font-semibold text-yellow-600">★ {provider.rating.toFixed(1)}</span>
+                        {user?.role === "Resident" ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="ml-3"
+                            onClick={() => navigate(`/resident/request-service?providerId=${provider.id}`)}
+                          >
+                            Request
+                          </Button>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
