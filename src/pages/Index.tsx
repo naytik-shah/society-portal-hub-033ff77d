@@ -138,6 +138,17 @@ const Index = () => {
             <p>Resident: resident1 / pass123</p>
             <p>Provider: provider1 / pass123</p>
           </div>
+
+          <div className="text-center text-sm text-muted-foreground mt-3">
+            Don't have an account?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/register")}
+              className="font-medium text-primary hover:underline"
+            >
+              Register here
+            </button>
+          </div>
         </form>
       </div>
     </div>

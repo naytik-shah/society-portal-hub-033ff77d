@@ -7,6 +7,8 @@ export interface User {
   email: string;
   role: string;
   name: string;
+  provider_id?: number;   // service_providers.id (only for PROVIDER users)
+  service_type?: string;  // service type (only for PROVIDER users)
 }
 
 export interface Visitor {

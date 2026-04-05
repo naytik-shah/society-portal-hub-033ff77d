@@ -59,6 +59,8 @@ export interface LoginResponse {
     email: string;
     role: string;
     name: string;
+    provider_id?: number;   // service_providers.id (PROVIDER only)
+    service_type?: string;  // service type (PROVIDER only)
   };
 }
 
@@ -195,19 +197,30 @@ export async function getAllProviders() {
 
 export interface ServiceRequest {
   id?: number;
-  provider_id: number;
+  provider_id?: number | null;
   resident_id: number;
+  service_type: string;
   description: string;
   status?: string;
   created_at?: string;
 }
 
 export async function createServiceRequest(
-  request: Omit<ServiceRequest, "id">
+  request: { resident_id: number; service_type: string; description: string }
 ) {
-  return apiCall("/service/request", {
+  return apiCall("/create_request", {
     method: "POST",
     body: JSON.stringify(request),
+  });
+}
+
+export async function acceptServiceRequest(
+  requestId: number,
+  providerId: number
+) {
+  return apiCall("/accept_request", {
+    method: "POST",
+    body: JSON.stringify({ request_id: requestId, provider_id: providerId }),
   });
 }
 
@@ -250,8 +263,36 @@ export async function addProviderSchedule(schedule: Omit<Schedule, "id">) {
   });
 }
 
+// ================= AUTH: REGISTER =================
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  role: "RESIDENT" | "PROVIDER";
+  username?: string;
+}
+
+export async function register(data: RegisterRequest) {
+  return apiCall("/register", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ================= HELPER: Get logged-in user =================
+
+export function getLoggedInUser() {
+  try {
+    const stored = localStorage.getItem("appUser");
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return null;
+}
+
 export default {
   login,
+  register,
   getUsers,
   getUsersByRole,
   addVisitor,
@@ -265,7 +306,9 @@ export default {
   getProvidersByService,
   addProvider,
   createServiceRequest,
+  acceptServiceRequest,
   getServiceRequests,
   getProviderSchedule,
   addProviderSchedule,
+  getLoggedInUser,
 };

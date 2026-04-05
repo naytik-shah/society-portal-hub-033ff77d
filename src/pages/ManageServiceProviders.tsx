@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Wrench, Phone, Eye, Zap, Droplets, UserCheck, Car, Bug, CookingPot } from "lucide-react";
+import { ArrowLeft, Wrench, Phone, Eye, Zap, Droplets, UserCheck, Car, Bug, CookingPot, Search, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getAllProviders, addProvider } from "@/services/api";
+import { getAllProviders, addProvider, getProviderById } from "@/services/api";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-
-const serviceTypes = ["Electrician", "Plumber", "Maid", "Driver", "Pest Control", "Cook"] as const;
 
 const serviceIcons: Record<string, React.ElementType> = {
   Electrician: Zap,
@@ -23,28 +20,27 @@ const serviceIcons: Record<string, React.ElementType> = {
 };
 
 interface Provider {
+  id?: number;
   name: string;
   phone: string;
   service_type: string;
+  email?: string;
+  description?: string;
+  rating?: number;
   status?: "Available" | "Busy";
 }
-
-const dummyProviders: Provider[] = [
-  { name: "Rajesh Sharma", phone: "9876543210", service_type: "Electrician", status: "Available" },
-  { name: "Suresh Patil", phone: "9123456780", service: "Plumber", status: "Busy" },
-  { name: "Meena Joshi", phone: "9988776655", service: "Maid", status: "Available" },
-  { name: "Arun Singh", phone: "9765432109", service: "Driver", status: "Available" },
-  { name: "Ravi Desai", phone: "9001122334", service: "Pest Control", status: "Busy" },
-  { name: "Lata Kumari", phone: "9334455667", service: "Cook", status: "Available" },
-];
 
 const ManageServiceProviders = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [service, setService] = useState("");
+
+  // Verification state
+  const [providerId, setProviderId] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [verifiedProvider, setVerifiedProvider] = useState<Provider | null>(null);
+  const [verifyError, setVerifyError] = useState("");
 
   useEffect(() => {
     const loadProviders = async () => {
@@ -58,37 +54,81 @@ const ManageServiceProviders = () => {
           description: "Could not load providers.",
           variant: "destructive",
         });
-        setProviders(dummyProviders);
       }
     };
 
     loadProviders();
   }, [toast]);
 
+  // Reset verification when Provider ID changes
+  const handleProviderIdChange = (value: string) => {
+    setProviderId(value);
+    setIsVerified(false);
+    setVerifiedProvider(null);
+    setVerifyError("");
+  };
+
+  // Verify provider by ID
+  const handleVerify = async () => {
+    const id = parseInt(providerId, 10);
+    if (!providerId || isNaN(id) || id <= 0) {
+      setVerifyError("Please enter a valid Provider ID (positive number)");
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerifyError("");
+    setIsVerified(false);
+    setVerifiedProvider(null);
+
+    try {
+      const response = await getProviderById(id) as any;
+
+      if (response.success && response.provider) {
+        setVerifiedProvider(response.provider);
+        setIsVerified(true);
+        toast({ title: "Provider Verified", description: `${response.provider.name} found in database.` });
+      } else {
+        setVerifyError("Invalid Provider ID — provider not found in database.");
+      }
+    } catch (error) {
+      setVerifyError("Invalid Provider ID — provider not found in database.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Add verified provider
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !phone || !service) return;
+
+    if (!isVerified || !verifiedProvider) {
+      toast({ title: "Error", description: "Please verify the provider first.", variant: "destructive" });
+      return;
+    }
 
     try {
       await addProvider({
-        name,
-        service_type: service,
-        phone,
-        email: "",
-        description: "",
-        rating: 0,
+        name: verifiedProvider.name,
+        service_type: verifiedProvider.service_type,
+        phone: verifiedProvider.phone,
+        email: verifiedProvider.email || "",
+        description: verifiedProvider.description || "",
+        rating: verifiedProvider.rating || 0,
       });
 
-      const providerObj: Provider = { name, phone, service_type: service, status: "Available" };
-      setProviders((prev) => [providerObj, ...prev]);
+      // Add to local list
+      setProviders((prev) => [{ ...verifiedProvider, status: "Available" }, ...prev]);
 
-      setName("");
-      setPhone("");
-      setService("");
+      // Reset form
+      setProviderId("");
+      setIsVerified(false);
+      setVerifiedProvider(null);
+      setVerifyError("");
 
-      toast({ title: "Provider Added", description: `${name} has been added as ${service}.` });
+      toast({ title: "Provider Added", description: `${verifiedProvider.name} has been added as ${verifiedProvider.service_type}.` });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to add provider", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to add provider.", variant: "destructive" });
     }
   };
 
@@ -108,26 +148,81 @@ const ManageServiceProviders = () => {
           <h1 className="text-2xl font-bold">Service Provider Management</h1>
         </div>
 
-        {/* Add Provider Form */}
+        {/* Add Provider Form — ID-based verification */}
         <Card className="mb-10">
           <CardHeader>
             <CardTitle className="text-lg">Add Service Provider</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Input placeholder="Provider Name" value={name} onChange={(e) => setName(e.target.value)} required />
-              <Input placeholder="Phone Number" type="number" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-              <Select value={service} onValueChange={setService}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Service Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {serviceTypes.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button type="submit" className="w-full">Add Provider</Button>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Step 1: Enter & Verify Provider ID */}
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Provider ID</label>
+                  <Input
+                    placeholder="Enter Provider ID (e.g. 1, 2, 3...)"
+                    type="number"
+                    min="1"
+                    value={providerId}
+                    onChange={(e) => handleProviderIdChange(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleVerify}
+                  disabled={isVerifying || !providerId}
+                  className="shrink-0"
+                >
+                  {isVerifying ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</>
+                  ) : (
+                    <><Search className="mr-2 h-4 w-4" /> Verify Provider</>
+                  )}
+                </Button>
+              </div>
+
+              {/* Verification error */}
+              {verifyError && (
+                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <XCircle className="h-4 w-4 shrink-0" />
+                  {verifyError}
+                </div>
+              )}
+
+              {/* Step 2: Show auto-filled provider details */}
+              {isVerified && verifiedProvider && (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-green-700 font-medium text-sm">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Provider Verified Successfully
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Provider Name</label>
+                      <Input value={verifiedProvider.name} disabled className="bg-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Phone Number</label>
+                      <Input value={verifiedProvider.phone} disabled className="bg-white" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Service Type</label>
+                      <Input value={verifiedProvider.service_type} disabled className="bg-white" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Add verified provider */}
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                disabled={!isVerified}
+              >
+                Add Provider
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -150,7 +245,7 @@ const ManageServiceProviders = () => {
               </TableHeader>
               <TableBody>
                 {providers.map((p, i) => {
-                  const Icon = serviceIcons[p.service] || Wrench;
+                  const Icon = serviceIcons[p.service_type] || Wrench;
                   return (
                     <TableRow key={i}>
                       <TableCell className="font-medium">{p.name}</TableCell>

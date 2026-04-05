@@ -99,15 +99,17 @@ const HomeServices = () => {
                           <span className="text-xs text-muted-foreground">{provider.phone}</span>
                         </div>
                         <span className="text-sm font-semibold text-yellow-600">★ {provider.rating.toFixed(1)}</span>
-                        {user?.role === "Resident" ? (
+                        {user?.role?.toUpperCase() === "RESIDENT" ? (
                           <Button
                             size="sm"
                             variant="secondary"
                             className="ml-3"
-                            onClick={() => navigate(`/resident/request-service?providerId=${provider.id}`)}
+                            onClick={() => navigate(`/resident/request-service?providerId=${provider.id}&serviceType=${encodeURIComponent(provider.service_type)}`)}
                           >
                             Request
                           </Button>
+                        ) : !user ? (
+                          <span className="ml-3 text-xs text-red-500">Please login first</span>
                         ) : null}
                       </li>
                     ))}

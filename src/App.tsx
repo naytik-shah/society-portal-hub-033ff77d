@@ -18,6 +18,7 @@ import ProviderProfile from "./pages/ProviderProfile";
 import ServiceRequests from "./pages/ServiceRequests";
 import ResidentServiceRequest from "./pages/ResidentServiceRequest";
 import ProviderSchedule from "./pages/ProviderSchedule";
+import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/security" element={<SecurityDashboard />} />
             <Route path="/security/add-visitor" element={<AddVisitor />} />
             <Route path="/security/visitor-log" element={<VisitorLog />} />

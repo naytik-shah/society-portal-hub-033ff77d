@@ -56,3 +56,27 @@ def execute_query(query, params=None):
     except pymysql.Error as e:
         print(f"Query execution error: {e}")
         return None
+
+def execute_insert(query, params=None):
+    """
+    Execute an INSERT query and return the last inserted ID.
+    Returns None on failure.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return None
+    
+    try:
+        cursor = conn.cursor()
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        conn.commit()
+        last_id = cursor.lastrowid
+        cursor.close()
+        conn.close()
+        return last_id
+    except pymysql.Error as e:
+        print(f"Insert execution error: {e}")
+        return None
