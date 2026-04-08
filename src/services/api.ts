@@ -1,6 +1,5 @@
 /**
- * API Service - Centralized backend API calls
- * Connects to backend running on localhost:5000
+ * Admin API functions – all calls include X-User-Role: ADMIN header
  */
 
 const API_BASE_URL = "http://localhost:5000";
@@ -15,7 +14,8 @@ async function apiCall<T>(
     ...options.headers,
   };
 
-  const tryUrls = [`${API_BASE_URL}${endpoint}`, `${API_BASE_URL}/api${endpoint}`];
+  // Only try the direct URL – our Flask backend has no /api prefix
+  const tryUrls = [`${API_BASE_URL}${endpoint}`];
   let lastError: unknown = null;
 
   for (const url of tryUrls) {
@@ -59,8 +59,8 @@ export interface LoginResponse {
     email: string;
     role: string;
     name: string;
-    provider_id?: number;   // service_providers.id (PROVIDER only)
-    service_type?: string;  // service type (PROVIDER only)
+    provider_id?: number;
+    service_type?: string;
   };
 }
 
@@ -83,6 +83,12 @@ export async function getUsersByRole(role: string) {
   return apiCall(`/users/role/${role}`);
 }
 
+export async function getResidents() {
+  return apiCall("/residents");
+}
+
+
+
 // ================= VISITORS =================
 
 export interface Visitor {
@@ -97,7 +103,6 @@ export interface Visitor {
 }
 
 export async function addVisitor(visitor: Omit<Visitor, "id">) {
-  // Flask API endpoint uses /visitors/add (POST), Express API may use /visitors
   try {
     return await apiCall("/visitors/add", {
       method: "POST",
@@ -147,6 +152,7 @@ export interface ServiceProvider {
   email: string;
   description?: string;
   rating?: number;
+  status?: string;
   created_at?: string;
 }
 
@@ -159,7 +165,6 @@ export async function getProvidersByService(serviceType: string) {
 }
 
 export async function addProvider(provider: Omit<ServiceProvider, "id">) {
-  // Flask path is POST /providers/add, Express path is likely POST /api/service-providers
   const endpoints = ["/providers/add", "/providers", "/service-providers"];
 
   for (const endpoint of endpoints) {
@@ -174,7 +179,6 @@ export async function addProvider(provider: Omit<ServiceProvider, "id">) {
       if (!errMsg.includes("404") && !errMsg.includes("405")) {
         throw error;
       }
-      // try next endpoint
     }
   }
 
@@ -191,6 +195,24 @@ export async function getAllProviders() {
     }
     throw error;
   }
+}
+
+export async function getAllProvidersAnyStatus() {
+  return apiCall("/providers/all");
+}
+
+export async function registerProvider(data: {
+  name: string;
+  service_type: string;
+  phone: string;
+  email: string;
+  password: string;
+  description?: string;
+}) {
+  return apiCall("/providers/register", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 // ================= SERVICE REQUESTS =================
@@ -290,6 +312,164 @@ export function getLoggedInUser() {
   return null;
 }
 
+// ===================== ADMIN HELPERS =====================
+
+function adminHeaders() {
+  return { "X-User-Role": "ADMIN" };
+}
+
+// ── Dashboard ──
+export async function adminGetStats() {
+  return apiCall("/admin/stats", { headers: adminHeaders() });
+}
+
+// ── Residents ──
+export async function adminGetResidents() {
+  return apiCall("/admin/residents", { headers: adminHeaders() });
+}
+
+export async function adminCreateResident(data: {
+  name: string; email: string; password: string; username: string;
+  phone?: string; flat_number?: string;
+}) {
+  return apiCall("/admin/residents", {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateResident(
+  id: number,
+  data: { name: string; email: string; username: string; phone?: string; flat_number?: string }
+) {
+  return apiCall(`/admin/residents/${id}`, {
+    method: "PUT",
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteResident(id: number) {
+  return apiCall(`/admin/residents/${id}`, {
+    method: "DELETE",
+    headers: adminHeaders(),
+  });
+}
+
+// ── Guards ──
+export async function adminGetGuards() {
+  return apiCall("/admin/guards", { headers: adminHeaders() });
+}
+
+export async function adminCreateGuard(data: {
+  name: string; email: string; password: string; username: string;
+}) {
+  return apiCall("/admin/guards", {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateGuard(
+  id: number,
+  data: { name: string; email: string; username: string }
+) {
+  return apiCall(`/admin/guards/${id}`, {
+    method: "PUT",
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteGuard(id: number) {
+  return apiCall(`/admin/guards/${id}`, {
+    method: "DELETE",
+    headers: adminHeaders(),
+  });
+}
+
+// ── Providers ──
+export async function adminGetProviders() {
+  return apiCall("/admin/providers", { headers: adminHeaders() });
+}
+
+export async function adminApproveProvider(id: number) {
+  return apiCall(`/admin/providers/${id}/approve`, {
+    method: "PUT",
+    headers: adminHeaders(),
+  });
+}
+
+export async function adminRejectProvider(id: number) {
+  return apiCall(`/admin/providers/${id}/reject`, {
+    method: "PUT",
+    headers: adminHeaders(),
+  });
+}
+
+export async function adminDeleteProvider(id: number) {
+  return apiCall(`/admin/providers/${id}`, {
+    method: "DELETE",
+    headers: adminHeaders(),
+  });
+}
+
+// ── Visitor Logs ──
+export async function adminGetVisitors() {
+  return apiCall("/admin/visitors", { headers: adminHeaders() });
+}
+
+// ── Service Requests ──
+export async function adminGetServiceRequests() {
+  return apiCall("/admin/service-requests", { headers: adminHeaders() });
+}
+
+// ── Events ──
+export async function adminGetEvents() {
+  return apiCall("/admin/events");
+}
+
+export async function adminCreateEvent(data: {
+  title: string;
+  description?: string;
+  event_date: string;
+  event_time?: string;
+  location?: string;
+  created_by: number;
+}) {
+  return apiCall("/admin/events", {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminUpdateEvent(
+  id: number,
+  data: {
+    title: string;
+    description?: string;
+    event_date: string;
+    event_time?: string;
+    location?: string;
+  }
+) {
+  return apiCall(`/admin/events/${id}`, {
+    method: "PUT",
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeleteEvent(id: number) {
+  return apiCall(`/admin/events/${id}`, {
+    method: "DELETE",
+    headers: adminHeaders(),
+  });
+}
+
 export default {
   login,
   register,
@@ -311,4 +491,23 @@ export default {
   getProviderSchedule,
   addProviderSchedule,
   getLoggedInUser,
+  adminGetStats,
+  adminGetResidents,
+  adminCreateResident,
+  adminUpdateResident,
+  adminDeleteResident,
+  adminGetGuards,
+  adminCreateGuard,
+  adminUpdateGuard,
+  adminDeleteGuard,
+  adminGetProviders,
+  adminApproveProvider,
+  adminRejectProvider,
+  adminDeleteProvider,
+  adminGetVisitors,
+  adminGetServiceRequests,
+  adminGetEvents,
+  adminCreateEvent,
+  adminUpdateEvent,
+  adminDeleteEvent,
 };

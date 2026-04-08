@@ -20,6 +20,13 @@ import ResidentServiceRequest from "./pages/ResidentServiceRequest";
 import ProviderSchedule from "./pages/ProviderSchedule";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminResidents from "./pages/admin/AdminResidents";
+import AdminGuards from "./pages/admin/AdminGuards";
+import AdminProviders from "./pages/admin/AdminProviders";
+import AdminEvents from "./pages/admin/AdminEvents";
+import AdminVisitorLogs from "./pages/admin/AdminVisitorLogs";
+import AdminServiceRequests from "./pages/admin/AdminServiceRequests";
 
 const queryClient = new QueryClient();
 
@@ -33,20 +40,36 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/register" element={<Register />} />
+
+            {/* Security */}
             <Route path="/security" element={<SecurityDashboard />} />
             <Route path="/security/add-visitor" element={<AddVisitor />} />
             <Route path="/security/visitor-log" element={<VisitorLog />} />
+
+            {/* Resident */}
             <Route path="/resident" element={<ResidentDashboard />} />
             <Route path="/resident/my-visitors" element={<MyVisitors />} />
             <Route path="/resident/services" element={<HomeServices />} />
             <Route path="/resident/events" element={<SocietyEvents />} />
             <Route path="/resident/manage-providers" element={<ManageServiceProviders />} />
+            <Route path="/resident/requests" element={<ServiceRequests />} />
+            <Route path="/resident/request-service" element={<ResidentServiceRequest />} />
+
+            {/* Provider */}
             <Route path="/provider" element={<ServiceProviderDashboard />} />
             <Route path="/provider/profile" element={<ProviderProfile />} />
             <Route path="/provider/requests" element={<ServiceRequests />} />
-            <Route path="/resident/requests" element={<ServiceRequests />} />
-            <Route path="/resident/request-service" element={<ResidentServiceRequest />} />
             <Route path="/provider/schedule" element={<ProviderSchedule />} />
+
+            {/* Admin */}
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/residents" element={<AdminResidents />} />
+            <Route path="/admin/guards" element={<AdminGuards />} />
+            <Route path="/admin/providers" element={<AdminProviders />} />
+            <Route path="/admin/events" element={<AdminEvents />} />
+            <Route path="/admin/visitors" element={<AdminVisitorLogs />} />
+            <Route path="/admin/service-requests" element={<AdminServiceRequests />} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

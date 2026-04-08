@@ -1,14 +1,38 @@
 """
 Flask Application for Residential Society Management System
 """
+import datetime
 from flask import Flask, request, jsonify, make_response
+from flask.json.provider import DefaultJSONProvider
 from config import Config
 from routes.auth_routes import auth_bp
 from routes.visitor_routes import visitor_bp
 from routes.service_provider_routes import provider_bp
+from routes.admin_routes import admin_bp
+
+
+class CustomJSONProvider(DefaultJSONProvider):
+    """Extend Flask's JSON provider to handle MySQL date/time types."""
+
+    def default(self, obj):
+        # datetime.datetime must come first (it's a subclass of datetime.date)
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        if isinstance(obj, datetime.date):
+            return obj.isoformat()          # e.g. '2026-04-15'
+        if isinstance(obj, datetime.timedelta):
+            # MySQL TIME columns come back as timedelta
+            total = int(obj.total_seconds())
+            h, rem = divmod(total, 3600)
+            m, s = divmod(rem, 60)
+            return f"{h:02d}:{m:02d}:{s:02d}"
+        return super().default(obj)
+
 
 # Initialize Flask app
 app = Flask(__name__)
+app.json_provider_class = CustomJSONProvider
+app.json = CustomJSONProvider(app)
 
 # Load configuration
 app.config.from_object(Config)
@@ -22,7 +46,7 @@ def add_cors_headers(response):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, X-User-Role'
         response.headers['Access-Control-Expose-Headers'] = 'Content-Type, Content-Length'
         response.headers['Access-Control-Max-Age'] = '86400'
     return response
@@ -38,7 +62,7 @@ def handle_preflight():
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, X-User-Role'
             response.headers['Access-Control-Max-Age'] = '86400'
         return response
 
@@ -46,6 +70,7 @@ def handle_preflight():
 app.register_blueprint(auth_bp)
 app.register_blueprint(visitor_bp, url_prefix='/visitors')
 app.register_blueprint(provider_bp)
+app.register_blueprint(admin_bp)
 
 # Root endpoint
 @app.route('/', methods=['GET'])

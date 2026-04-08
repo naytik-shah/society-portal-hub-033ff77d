@@ -20,6 +20,7 @@ def normalize_role(role_str):
         'provider': 'PROVIDER',
         'serviceprovider': 'PROVIDER',
         'service-provider': 'PROVIDER',
+        'admin': 'ADMIN',
     }
     return role_map.get(role_key, role_str.strip().upper())
 
@@ -69,10 +70,15 @@ def login():
                 'name': user.get('name')
             }
             
-            # If provider, also return their service_providers.id
+            # If provider, check approval status before allowing login
             if normalized_user_role == 'PROVIDER':
                 provider = ServiceProvider.get_provider_by_user_id(user.get('id'))
                 if provider:
+                    pstatus = provider.get('status', 'pending')
+                    if pstatus == 'pending':
+                        return jsonify({'success': False, 'message': 'Your account is pending admin approval. Please wait.'}), 403
+                    if pstatus == 'rejected':
+                        return jsonify({'success': False, 'message': 'Your provider account has been rejected by the admin.'}), 403
                     user_response['provider_id'] = provider.get('id')
                     user_response['service_type'] = provider.get('service_type')
                     print(f"DEBUG: Provider login - user.id={user.get('id')}, provider.id={provider.get('id')}")
@@ -231,3 +237,23 @@ def debug_get_all_users():
             return jsonify({'success': False, 'message': 'No users found in database'}), 404
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
+@auth_bp.route('/residents', methods=['GET'])
+def get_residents():
+    """
+    Return a directory of residents for the security guard dashboard.
+    Includes name, flat_number, phone only — no sensitive auth data.
+    """
+    from database import execute_query
+    try:
+        rows = execute_query("""
+            SELECT id, name, flat_number, phone
+            FROM users
+            WHERE role = 'RESIDENT'
+            ORDER BY flat_number ASC, name ASC
+        """)
+        return jsonify({'success': True, 'residents': rows or []}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+

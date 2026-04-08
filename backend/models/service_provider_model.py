@@ -23,31 +23,46 @@ class ServiceProvider:
         user_id must reference an existing user with role PROVIDER.
         """
         query = """
-            INSERT INTO service_providers (user_id, name, service_type, phone, email, description, rating)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO service_providers (user_id, name, service_type, phone, email, description, rating, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending')
         """
         result = execute_insert(query, (user_id, name, service_type, phone, email, description, rating))
         return result  # Returns the new service_providers.id or None
     
     @staticmethod
     def get_all_providers():
-        """Get all service providers with their linked user info"""
+        """Get approved service providers only (for service selection dropdowns)."""
         query = """
             SELECT sp.id, sp.user_id, sp.name, sp.service_type, sp.phone, sp.email,
-                   sp.description, sp.rating, sp.created_at,
+                   sp.description, sp.rating, sp.status, sp.created_at,
                    u.username, u.name AS user_name
             FROM service_providers sp
             JOIN users u ON sp.user_id = u.id
+            WHERE sp.status = 'approved'
             ORDER BY sp.rating DESC
         """
         return execute_query(query)
+
+    @staticmethod
+    def get_all_providers_any_status():
+        """Get all providers regardless of status (for resident management view)."""
+        query = """
+            SELECT sp.id, sp.user_id, sp.name, sp.service_type, sp.phone, sp.email,
+                   sp.description, sp.rating, sp.status, sp.created_at,
+                   u.username, u.name AS user_name
+            FROM service_providers sp
+            JOIN users u ON sp.user_id = u.id
+            ORDER BY sp.created_at DESC
+        """
+        return execute_query(query)
+
     
     @staticmethod
     def get_provider_by_id(provider_id):
         """Get a service provider by service_providers.id"""
         query = """
             SELECT sp.id, sp.user_id, sp.name, sp.service_type, sp.phone, sp.email,
-                   sp.description, sp.rating, sp.created_at,
+                   sp.description, sp.rating, sp.status, sp.created_at,
                    u.username, u.name AS user_name
             FROM service_providers sp
             JOIN users u ON sp.user_id = u.id
@@ -63,7 +78,7 @@ class ServiceProvider:
         """Get provider details by the linked users.id"""
         query = """
             SELECT sp.id, sp.user_id, sp.name, sp.service_type, sp.phone, sp.email,
-                   sp.description, sp.rating, sp.created_at,
+                   sp.description, sp.rating, sp.status, sp.created_at,
                    u.username, u.name AS user_name
             FROM service_providers sp
             JOIN users u ON sp.user_id = u.id
@@ -79,11 +94,11 @@ class ServiceProvider:
         """Get service providers by service type"""
         query = """
             SELECT sp.id, sp.user_id, sp.name, sp.service_type, sp.phone, sp.email,
-                   sp.description, sp.rating, sp.created_at,
+                   sp.description, sp.rating, sp.status, sp.created_at,
                    u.username, u.name AS user_name
             FROM service_providers sp
             JOIN users u ON sp.user_id = u.id
-            WHERE sp.service_type = %s
+            WHERE sp.service_type = %s AND sp.status = 'approved'
             ORDER BY sp.rating DESC
         """
         return execute_query(query, (service_type,))

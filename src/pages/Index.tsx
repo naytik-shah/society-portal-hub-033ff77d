@@ -50,6 +50,8 @@ const Index = () => {
           navigate("/security");
         } else if (role === "Service Provider") {
           navigate("/provider");
+        } else if (role === "Admin") {
+          navigate("/admin");
         } else {
           navigate("/resident");
         }
@@ -121,6 +123,7 @@ const Index = () => {
                 <SelectValue placeholder="Select your role" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="Admin">Admin</SelectItem>
                 <SelectItem value="Security">Security</SelectItem>
                 <SelectItem value="Resident">Resident</SelectItem>
                 <SelectItem value="Service Provider">Service Provider</SelectItem>
@@ -134,6 +137,7 @@ const Index = () => {
 
           <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
             <p className="font-semibold">Test Credentials:</p>
+            <p>Admin: admin / admin123</p>
             <p>Security: security1 / pass123</p>
             <p>Resident: resident1 / pass123</p>
             <p>Provider: provider1 / pass123</p>

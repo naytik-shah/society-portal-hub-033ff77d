@@ -13,7 +13,11 @@ const Navbar = () => {
     navigate("/");
   };
 
-  const dashboardPath = role === "Security" ? "/security" : role === "Service Provider" ? "/provider" : "/resident";
+  const dashboardPath =
+    role === "Security" ? "/security" :
+    role === "Service Provider" ? "/provider" :
+    role === "ADMIN" || user?.role === "ADMIN" ? "/admin" :
+    "/resident";
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">

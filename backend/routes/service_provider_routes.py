@@ -7,7 +7,18 @@ from models.service_provider_model import ServiceProvider
 # Create blueprint for service provider routes
 provider_bp = Blueprint('provider', __name__)
 
+@provider_bp.route('/providers/all', methods=['GET'])
+def get_all_providers_any_status():
+    """Get all providers (any status) for the resident management view."""
+    try:
+        providers = ServiceProvider.get_all_providers_any_status()
+        return jsonify({'success': True, 'providers': providers or []}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+
 @provider_bp.route('/providers', methods=['GET'])
+
 def get_all_providers():
     """Get all service providers (JOINed with users)"""
     try:
@@ -80,6 +91,78 @@ def add_provider():
     
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error adding provider: {str(e)}'}), 500
+
+
+@provider_bp.route('/providers/register', methods=['POST'])
+def register_provider():
+    """
+    Resident-facing endpoint: register a new service provider.
+    Creates a user account (role=PROVIDER) + service_providers row (status=pending).
+    Admin must approve before the provider can log in.
+
+    Expects JSON: {
+        "name": "string",
+        "service_type": "string",
+        "phone": "string",
+        "email": "string",
+        "password": "string",
+        "description": "string (optional)"
+    }
+    """
+    from database import execute_insert, execute_query
+    from models.user_model import User
+
+    try:
+        data = request.get_json(force=True)
+        required = ('name', 'service_type', 'phone', 'email', 'password')
+        if not all(data.get(k) for k in required):
+            return jsonify({'success': False, 'message': 'name, service_type, phone, email, and password are required'}), 400
+
+        # Prevent duplicate email
+        if User.get_by_email(data['email']):
+            return jsonify({'success': False, 'message': 'A user with this email already exists'}), 409
+
+        # Derive a unique username from email prefix
+        base_username = data['email'].split('@')[0]
+        username = base_username
+        counter = 1
+        while User.get_by_username(username):
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        # Step 1: create the user account with role PROVIDER
+        user_id = execute_insert(
+            "INSERT INTO users (username, password, email, name, role) VALUES (%s, %s, %s, %s, 'PROVIDER')",
+            (username, data['password'], data['email'], data['name'])
+        )
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Failed to create user account'}), 500
+
+        # Step 2: create the service_providers row (pending)
+        sp_id = ServiceProvider.add_provider(
+            user_id,
+            data['name'],
+            data['service_type'],
+            data['phone'],
+            data['email'],
+            data.get('description', ''),
+            0.0
+        )
+        if not sp_id:
+            # Rollback: remove the orphaned user
+            execute_query("DELETE FROM users WHERE id = %s", (user_id,))
+            return jsonify({'success': False, 'message': 'Failed to create provider profile'}), 500
+
+        return jsonify({
+            'success': True,
+            'message': 'Provider registered successfully. Pending admin approval.',
+            'provider_id': sp_id
+        }), 201
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error registering provider: {str(e)}'}), 500
+
+
 
 @provider_bp.route('/create_request', methods=['POST'])
 def create_request():
